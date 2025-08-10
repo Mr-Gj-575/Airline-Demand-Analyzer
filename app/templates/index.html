@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Airline Demand Analyzer</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container">
+        <h1 class="mt-5">Airline Demand Analyzer</h1>
+        <p class="lead">Analyze airline booking market demand data.</p>
+
+        <div class="row">
+            <div class="col-md-6">
+                <form id="scrape-form" class="mt-4">
+                    <h3>Scrape Data</h3>
+                    <div class="form-group">
+                        <label for="scrape-url">Website URL:</label>
+                        <input type="url" class="form-control" id="scrape-url" placeholder="Enter website URL">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Scrape Data</button>
+                </form>
+            </div>
+            
+            <div class="col-md-6">
+                <form id="api-form" class="mt-4">
+                    <h3>Get API Data</h3>
+                    <div class="form-group">
+                        <label for="origin">Origin:</label>
+                        <input type="text" class="form-control" id="origin" placeholder="e.g., NYC">
+                    </div>
+                    <div class="form-group">
+                        <label for="destination">Destination:</label>
+                        <input type="text" class="form-control" id="destination" placeholder="e.g., LAX">
+                    </div>
+                    <button type="submit" class="btn btn-success">Get API Data</button>
+                </form>
+            </div>
+        </div>
+
+        <div id="results" class="mt-4" style="display: none;">
+            <h2>Analysis Results</h2>
+            <div id="insights"></div>
+            <div id="visualization"></div>
+            <div id="loading" class="text-center" style="display: none;">
+                <div class="spinner-border" role="status">
+                    <span class="sr-only">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        let currentData = [];
+
+        function showLoading() {
+            $('#loading').show();
+            $('#insights').empty();
+            $('#visualization').empty();
+        }
+
+        function hideLoading() {
+            $('#loading').hide();
+        }
+
+        function processAndVisualize(data) {
+            showLoading();
+            
+            // Process data
+            $.ajax({
+                url: '/process',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ data: data }),
+                success: function(response) {
+                    displayInsights(response);
+                    
+                    // Generate visualization
+                    $.ajax({
+                        url: '/visualize',
+                        method: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ data: data }),
+                        success: function(vizResponse) {
+                            displayVisualization(vizResponse.image_path);
+                            hideLoading();
+                        },
+                        error: function(xhr) {
+                            console.error('Visualization error:', xhr.responseText);
+                            hideLoading();
+                        }
+                    });
+                },
+                error: function(xhr) {
+                    console.error('Processing error:', xhr.responseText);
+                    hideLoading();
+                }
+            });
+        }
+
+        function displayInsights(data) {
+            let html = '<h4>Insights</h4>';
+            
+            if (data.insights && data.insights.length > 0) {
+                html += '<h5>Average Prices by Route:</h5><ul>';
+                data.insights.forEach(function(insight) {
+                    html += `<li>${insight.route}: $${insight.average_price.toFixed(2)}</li>`;
+                });
+                html += '</ul>';
+            }
+            
+            if (data.peak_periods && data.peak_periods.length > 0) {
+                html += '<h5>Peak Demand Periods:</h5><ul>';
+                data.peak_periods.forEach(function(period) {
+                    html += `<li>${period}</li>`;
+                });
+                html += '</ul>';
+            }
+            
+            $('#insights').html(html);
+        }
+
+        function displayVisualization(imagePath) {
+            if (imagePath) {
+                $('#visualization').html(`<h4>Demand Trends</h4><img src="${imagePath}" class="img-fluid" alt="Demand Trends Chart">`);
+            }
+        }
+
+        $('#scrape-form').on('submit', function(event) {
+            event.preventDefault();
+            const url = $('#scrape-url').val();
+            
+            if (!url) {
+                alert('Please enter a URL');
+                return;
+            }
+
+            $('#results').show();
+            showLoading();
+
+            $.ajax({
+                url: '/scrape',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ url: url }),
+                success: function(response) {
+                    currentData = response;
+                    processAndVisualize(currentData);
+                },
+                error: function(xhr) {
+                    alert('Scraping failed: ' + JSON.parse(xhr.responseText).error);
+                    hideLoading();
+                }
+            });
+        });
+
+        $('#api-form').on('submit', function(event) {
+            event.preventDefault();
+            const origin = $('#origin').val();
+            const destination = $('#destination').val();
+            
+            if (!origin || !destination) {
+                alert('Please enter both origin and destination');
+                return;
+            }
+
+            $('#results').show();
+            showLoading();
+
+            $.ajax({
+                url: '/api-data',
+                method: 'GET',
+                data: { origin: origin, destination: destination },
+                success: function(response) {
+                    currentData = Array.isArray(response) ? response : [response];
+                    processAndVisualize(currentData);
+                },
+                error: function(xhr) {
+                    alert('API request failed: ' + JSON.parse(xhr.responseText).error);
+                    hideLoading();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
