@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+airline_env/
+venv/
+
+# Generated files  
+static/*.png
+static/*.jpg
+tempCodeRunnerFile.py
+
+# IDE and OS files
+.vscode/
+.DS_Store
+Thumbs.db
