@@ -20,24 +20,6 @@ A Flask-based web application for analyzing airline booking market demand data t
 - Python 3.7 or higher
 - pip (Python package installer)
 
-### Quick Start
-
-1. **Clone the repository:**
-   git clone https://github.com/yourusername/airline-demand-analyzer.git
-   cd airline-demand-analyzer
-2. **Create a virtual environment:**
-   python -m venv airline_env
-   # On Windows:
-   airline_env\Scripts\activate
-   # On macOS/Linux:
-   source airline_env/bin/activate
-3. **Install dependencies:**
-   pip install -r requirements.txt
-4. **Run the application:**
-   python run.py
-5.**Open your browser:**
-Navigate to http://localhost:5000
-
 Usage
 Scraping Data
 
